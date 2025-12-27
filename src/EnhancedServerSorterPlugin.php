@@ -58,17 +58,18 @@ class EnhancedServerSorterPlugin implements HasPluginSettings, Plugin
     private function makeManageFoldersAction(): Action
     {
         return Action::make('manageFolders')
-            ->label('Manage folders')
+            ->label(fn () => trans('Enhanced-Server-Sorter::messages.manage_folders'))
             ->icon('tabler-folders')
             ->modalWidth('2xl')
-            ->modalSubmitActionLabel('Save')
+            ->modalSubmitActionLabel(fn () => trans('Enhanced-Server-Sorter::messages.save'))
+            ->modalCancelActionLabel(fn () => trans('Enhanced-Server-Sorter::messages.cancel'))
             ->visible(fn () => user() !== null)
             ->form(function () {
                 if (!Schema::hasTable('enhanced_server_folders')) {
                     return [
                         \Filament\Forms\Components\Placeholder::make('migration_required')
-                            ->label('Migration Required')
-                            ->content('Please run the migration to create the required tables.')
+                            ->label(fn () => trans('Enhanced-Server-Sorter::messages.migration_required'))
+                            ->content(fn () => trans('Enhanced-Server-Sorter::messages.migration_required_message'))
                     ];
                 }
 
@@ -76,17 +77,17 @@ class EnhancedServerSorterPlugin implements HasPluginSettings, Plugin
 
                 return [
                     Repeater::make('folders')
-                        ->label('Folders')
+                        ->label(fn () => trans('Enhanced-Server-Sorter::messages.folders'))
                         ->default(fn () => $this->loadFolders())
                         ->live()
                         ->schema([
                             Hidden::make('id'),
                             TextInput::make('name')
-                                ->label('Name')
+                                ->label(fn () => trans('Enhanced-Server-Sorter::messages.folder_name'))
                                 ->required()
                                 ->maxLength(255),
                             Select::make('server_ids')
-                                ->label('Servers')
+                                ->label(fn () => trans('Enhanced-Server-Sorter::messages.servers'))
                                 ->multiple()
                                 ->options($servers)
                                 ->searchable()
@@ -94,13 +95,13 @@ class EnhancedServerSorterPlugin implements HasPluginSettings, Plugin
                                 ->live()
                                 ->disabled(fn ($get) => $this->isFolderLocked($get('name')))
                                 ->helperText(fn ($get) => $this->isFolderLocked($get('name')) 
-                                    ? 'This folder is locked and cannot be modified' 
+                                    ? trans('Enhanced-Server-Sorter::messages.folder_locked') 
                                     : null)
                                 ->disableOptionsWhenSelectedInSiblingRepeaterItems(),
                         ])
                         ->collapsed()
                         ->reorderableWithButtons()
-                        ->addActionLabel('Add folder'),
+                        ->addActionLabel(fn () => trans('Enhanced-Server-Sorter::messages.add_folder')),
                 ];
             })
             ->action(function (array $data) {
@@ -132,8 +133,8 @@ class EnhancedServerSorterPlugin implements HasPluginSettings, Plugin
                         ->join(', ');
                     
                     Notification::make()
-                        ->title('Duplicate servers detected')
-                        ->body("The following servers are assigned to multiple folders: {$serverNames}")
+                        ->title(trans('Enhanced-Server-Sorter::messages.duplicate_servers'))
+                        ->body(trans('Enhanced-Server-Sorter::messages.duplicate_servers_message', ['servers' => $serverNames]))
                         ->danger()
                         ->send();
                     
@@ -143,7 +144,7 @@ class EnhancedServerSorterPlugin implements HasPluginSettings, Plugin
                 $this->persistFolders($folders, $user->id);
 
                 Notification::make()
-                    ->title('Folders updated')
+                    ->title(trans('Enhanced-Server-Sorter::messages.folders_updated'))
                     ->success()
                     ->send();
             });
@@ -315,33 +316,33 @@ class EnhancedServerSorterPlugin implements HasPluginSettings, Plugin
 
         return [
             Repeater::make('default_folders')
-                ->label('Default Folders')
-                ->helperText('These folders will be automatically created for all users and cannot be deleted by users.')
+                ->label(fn () => trans('Enhanced-Server-Sorter::messages.default_folders'))
+                ->helperText(fn () => trans('Enhanced-Server-Sorter::messages.default_folders_help'))
                 ->default(fn () => $this->loadDefaultFolders())
                 ->schema([
                     Hidden::make('id'),
                     TextInput::make('name')
-                        ->label('Folder Name')
+                        ->label(fn () => trans('Enhanced-Server-Sorter::messages.folder_name'))
                         ->required()
                         ->maxLength(255),
                     Select::make('server_ids')
-                        ->label('Servers')
+                        ->label(fn () => trans('Enhanced-Server-Sorter::messages.servers'))
                         ->multiple()
                         ->options($servers)
                         ->searchable()
                         ->preload()
-                        ->helperText('Select servers to automatically assign to this folder for all users')
+                        ->helperText(fn () => trans('Enhanced-Server-Sorter::messages.select_servers_help'))
                         ->disableOptionsWhenSelectedInSiblingRepeaterItems(),
                     \Filament\Forms\Components\Toggle::make('is_locked')
-                        ->label('Lock folder (users cannot modify server assignments)')
-                        ->helperText('If enabled, users will not be able to modify or remove server assignments for this folder')
+                        ->label(fn () => trans('Enhanced-Server-Sorter::messages.lock_folder'))
+                        ->helperText(fn () => trans('Enhanced-Server-Sorter::messages.lock_folder_help'))
                         ->default(false)
                         ->inline(false),
                 ])
                 ->collapsible()
                 ->collapsed()
                 ->reorderableWithButtons()
-                ->addActionLabel('Add Default Folder')
+                ->addActionLabel(fn () => trans('Enhanced-Server-Sorter::messages.add_default_folder'))
                 ->columns(2),
         ];
     }
@@ -411,12 +412,12 @@ class EnhancedServerSorterPlugin implements HasPluginSettings, Plugin
             $this->syncDefaultFoldersForAllUsers();
 
             Notification::make()
-                ->title('Default folders saved')
+                ->title(trans('Enhanced-Server-Sorter::messages.default_folders_saved'))
                 ->success()
                 ->send();
         } catch (\Exception $e) {
             Notification::make()
-                ->title('Error saving default folders')
+                ->title(trans('Enhanced-Server-Sorter::messages.error_saving'))
                 ->body($e->getMessage())
                 ->danger()
                 ->send();
